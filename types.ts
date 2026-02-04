@@ -21,6 +21,10 @@ export interface AttendanceRecord {
   timestamp: number;
   type: RecordType;
   location?: GeoLocation;
+  // 快照薪資，確保不溯及既往
+  snapshotSalaryMode: 'hourly' | 'monthly';
+  snapshotHourlyRate: number;
+  snapshotMonthlySalary: number;
 }
 
 export interface User {
@@ -38,6 +42,9 @@ export interface WorkSession {
   in: AttendanceRecord;
   out?: AttendanceRecord;
   durationMinutes: number;
+  hourlyRate: number;
+  monthlySalary: number;
+  salaryMode: 'hourly' | 'monthly';
 }
 
 export interface DailyReport {

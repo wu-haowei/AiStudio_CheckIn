@@ -1,10 +1,10 @@
 
-import { AttendanceRecord, User, UserRole } from '../types';
+import { AttendanceRecord, User, UserRole, RecordType } from '../types';
 
 const KEYS = {
-  ATTENDANCE: 'tw_hrms_v2_attendance',
-  USERS: 'tw_hrms_v2_users',
-  CURRENT_USER: 'tw_hrms_v2_current_user'
+  ATTENDANCE: 'tw_hrms_v3_attendance',
+  USERS: 'tw_hrms_v3_users',
+  CURRENT_USER: 'tw_hrms_v3_current_user'
 };
 
 const DEFAULT_ADMIN: User = {
@@ -15,7 +15,7 @@ const DEFAULT_ADMIN: User = {
   role: UserRole.ADMIN,
   salaryMode: 'hourly',
   hourlyRate: 200,
-  monthlySalary: 30000
+  monthlySalary: 0
 };
 
 export const StorageService = {
@@ -29,14 +29,24 @@ export const StorageService = {
     return JSON.parse(data);
   },
   
-  saveUsers: (users: User[]) => {
-    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+  updateUser: (updatedUser: User) => {
+    const users = StorageService.getUsers();
+    const index = users.findIndex(u => u.id === updatedUser.id);
+    if (index !== -1) {
+      users[index] = updatedUser;
+      localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+      // 如果更新的是當前登入者
+      const current = StorageService.getCurrentUser();
+      if (current && current.id === updatedUser.id) {
+        StorageService.setCurrentUser(updatedUser);
+      }
+    }
   },
 
   addUser: (user: User) => {
     const users = StorageService.getUsers();
     users.push(user);
-    StorageService.saveUsers(users);
+    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
   },
 
   getCurrentUser: (): User | null => {

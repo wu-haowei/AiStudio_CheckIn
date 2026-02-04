@@ -1,28 +1,36 @@
 
-import { AttendanceRecord, RecordType, User, WorkSession, DailyReport } from '../types';
+import { AttendanceRecord, RecordType, WorkSession, DailyReport } from '../types';
 
-export const calculatePayroll = (user: User, records: AttendanceRecord[]): DailyReport[] => {
-  // 1. 先依時間排序
+export const calculatePayrollFromRecords = (records: AttendanceRecord[]): DailyReport[] => {
   const sorted = [...records].sort((a, b) => a.timestamp - b.timestamp);
   
-  // 2. 配對 IN/OUT
   const sessions: WorkSession[] = [];
   for (let i = 0; i < sorted.length; i++) {
     if (sorted[i].type === RecordType.IN) {
       const nextOut = sorted.slice(i + 1).find(r => r.type === RecordType.OUT);
       if (nextOut) {
         const duration = Math.floor((nextOut.timestamp - sorted[i].timestamp) / (1000 * 60));
-        sessions.push({ in: sorted[i], out: nextOut, durationMinutes: Math.max(0, duration) });
-        // 跳過已使用的 OUT
-        const outIndex = sorted.indexOf(nextOut);
-        i = i < outIndex ? i : i; // 這裡不直接修改 i，但邏輯上我們只抓取後續未配對的
+        sessions.push({ 
+          in: sorted[i], 
+          out: nextOut, 
+          durationMinutes: Math.max(0, duration),
+          hourlyRate: sorted[i].snapshotHourlyRate,
+          monthlySalary: sorted[i].snapshotMonthlySalary,
+          salaryMode: sorted[i].snapshotSalaryMode
+        });
+        i = sorted.indexOf(nextOut, i);
       } else {
-        sessions.push({ in: sorted[i], durationMinutes: 0 });
+        sessions.push({ 
+          in: sorted[i], 
+          durationMinutes: 0,
+          hourlyRate: sorted[i].snapshotHourlyRate,
+          monthlySalary: sorted[i].snapshotMonthlySalary,
+          salaryMode: sorted[i].snapshotSalaryMode
+        });
       }
     }
   }
 
-  // 3. 依日期分組
   const dailyGroups: Record<string, WorkSession[]> = {};
   sessions.forEach(s => {
     const date = new Date(s.in.timestamp).toLocaleDateString();
@@ -30,14 +38,15 @@ export const calculatePayroll = (user: User, records: AttendanceRecord[]): Daily
     dailyGroups[date].push(s);
   });
 
-  // 4. 計算薪資
-  const baseHourlyRate = user.salaryMode === 'monthly' 
-    ? Math.round(user.monthlySalary / 30 / 8) 
-    : user.hourlyRate;
-
   return Object.entries(dailyGroups).map(([date, daySessions]) => {
     const totalMinutes = daySessions.reduce((sum, s) => sum + s.durationMinutes, 0);
     
+    // 使用該日第一筆簽到的薪資作為計算基準
+    const firstSession = daySessions[0];
+    const baseHourlyRate = firstSession.salaryMode === 'monthly' 
+      ? Math.round(firstSession.monthlySalary / 30 / 8) 
+      : firstSession.hourlyRate;
+
     let regular = 0;
     let ot134 = 0;
     let ot167 = 0;
@@ -56,9 +65,10 @@ export const calculatePayroll = (user: User, records: AttendanceRecord[]): Daily
       ot167 = totalMinutes - regLimit - otLimit;
     }
 
-    const pay = (regular * (baseHourlyRate / 60)) +
-                (ot134 * (baseHourlyRate / 60) * 1.34) +
-                (ot167 * (baseHourlyRate / 60) * 1.67);
+    const minuteRate = baseHourlyRate / 60;
+    const pay = (regular * minuteRate) +
+                (ot134 * minuteRate * 1.34) +
+                (ot167 * minuteRate * 1.67);
 
     return {
       date,

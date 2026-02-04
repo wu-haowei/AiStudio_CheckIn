@@ -18,6 +18,11 @@ const ClockCard: React.FC<ClockCardProps> = ({ user, onUpdate }) => {
   }, []);
 
   const handleClock = (type: RecordType) => {
+    if (!user.hourlyRate && !user.monthlySalary) {
+      alert('請先在個人設定中填寫薪資資訊');
+      return;
+    }
+
     setStatus('loading');
     
     const performClock = (loc?: GeoLocation) => {
@@ -26,7 +31,10 @@ const ClockCard: React.FC<ClockCardProps> = ({ user, onUpdate }) => {
         userId: user.id,
         timestamp: Date.now(),
         type,
-        location: loc
+        location: loc,
+        snapshotSalaryMode: user.salaryMode,
+        snapshotHourlyRate: user.hourlyRate,
+        snapshotMonthlySalary: user.monthlySalary
       };
       StorageService.addAttendance(newRecord);
       setStatus('success');
@@ -51,7 +59,7 @@ const ClockCard: React.FC<ClockCardProps> = ({ user, onUpdate }) => {
         <div className="text-5xl font-mono font-bold text-gray-800 tracking-tighter">
           {currentTime.toLocaleTimeString('zh-TW', { hour12: false })}
         </div>
-        <div className="text-gray-400 font-medium mt-1">
+        <div className="text-gray-400 font-medium mt-1 uppercase text-sm">
           {currentTime.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
         </div>
       </div>
@@ -60,7 +68,7 @@ const ClockCard: React.FC<ClockCardProps> = ({ user, onUpdate }) => {
         <button
           onClick={() => handleClock(RecordType.IN)}
           disabled={status === 'loading'}
-          className="py-6 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
+          className="py-6 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg hover:shadow-indigo-500/50 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
         >
           <div className="text-2xl mb-1">🌤️</div>
           簽到 (IN)
@@ -68,14 +76,14 @@ const ClockCard: React.FC<ClockCardProps> = ({ user, onUpdate }) => {
         <button
           onClick={() => handleClock(RecordType.OUT)}
           disabled={status === 'loading'}
-          className="py-6 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 active:scale-95 transition-all disabled:opacity-50"
+          className="py-6 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:shadow-orange-500/50 hover:bg-orange-600 active:scale-95 transition-all disabled:opacity-50"
         >
           <div className="text-2xl mb-1">🌙</div>
           簽退 (OUT)
         </button>
       </div>
 
-      {status === 'loading' && <p className="mt-4 text-indigo-500 animate-pulse font-medium text-sm">正在定位打卡中...</p>}
+      {status === 'loading' && <p className="mt-4 text-indigo-500 animate-pulse font-medium text-xs">正在定位打卡中...</p>}
       {status === 'success' && <p className="mt-4 text-green-500 font-bold text-sm">✅ 打卡成功！</p>}
     </div>
   );
