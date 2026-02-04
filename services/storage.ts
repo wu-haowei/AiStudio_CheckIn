@@ -1,10 +1,11 @@
 
-import { AttendanceRecord, User, UserRole, RecordType } from '../types';
+import { AttendanceRecord, User, UserRole, RecordType, AuditLog } from '../types';
 
 const KEYS = {
   ATTENDANCE: 'tw_hrms_v3_attendance',
   USERS: 'tw_hrms_v3_users',
-  CURRENT_USER: 'tw_hrms_v3_current_user'
+  CURRENT_USER: 'tw_hrms_v3_current_user',
+  AUDIT_LOGS: 'tw_hrms_v3_audit_logs'
 };
 
 const DEFAULT_ADMIN: User = {
@@ -35,7 +36,6 @@ export const StorageService = {
     if (index !== -1) {
       users[index] = updatedUser;
       localStorage.setItem(KEYS.USERS, JSON.stringify(users));
-      // 如果更新的是當前登入者
       const current = StorageService.getCurrentUser();
       if (current && current.id === updatedUser.id) {
         StorageService.setCurrentUser(updatedUser);
@@ -72,6 +72,17 @@ export const StorageService = {
     const records = StorageService.getAttendance();
     records.push(record);
     localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(records));
+  },
+
+  getAuditLogs: (): AuditLog[] => {
+    const data = localStorage.getItem(KEYS.AUDIT_LOGS);
+    return data ? JSON.parse(data) : [];
+  },
+
+  addAuditLog: (log: AuditLog) => {
+    const logs = StorageService.getAuditLogs();
+    logs.unshift(log); // 最新紀錄在最前
+    localStorage.setItem(KEYS.AUDIT_LOGS, JSON.stringify(logs.slice(0, 1000))); // 保留最近1000條
   },
 
   clearAll: () => {

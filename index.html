@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HRMS - 勞基法打卡系統</title>
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="./manifest.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -28,7 +30,15 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div id="root"></div>
-    <!-- 指向進入點，Vite 會自動處理 TSX 轉換 -->
+    <script type="module">
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW registered!', reg))
+                    .catch(err => console.log('SW reg error:', err));
+            });
+        }
+    </script>
     <script type="module" src="./index.tsx"></script>
 <script type="module" src="/index.tsx"></script>
 </body>

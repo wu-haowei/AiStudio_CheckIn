@@ -9,6 +9,24 @@ export enum UserRole {
   USER = 'user'
 }
 
+export enum AuditAction {
+  CREATE_USER = '建立員工',
+  UPDATE_USER = '更新員工',
+  BATCH_IMPORT = '批量匯入',
+  MANUAL_CLOCK = '補登打卡'
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: number;
+  operatorId: string;
+  operatorName: string;
+  targetId?: string;
+  targetName?: string;
+  action: AuditAction;
+  details: string;
+}
+
 export interface GeoLocation {
   lat: number;
   lng: number;
